@@ -159,7 +159,6 @@ mcp-jira-server/
 ├── .env                   # JIRA credentials (create this file)
 ├── .env.example           # Template for environment variables
 ├── .gitignore            # Protects sensitive files from git
-├── test-mcp.js           # Test script for MCP server
 ├── .vscode/              # VS Code configuration
 │   └── mcp.json          # MCP server configuration for VS Code
 └── README.md            # This file
@@ -215,7 +214,7 @@ Configures the MCP server for use with VS Code and GitHub Copilot:
 
 ```bash
 # Clone the repository (or download the files)
-git clone <your-repo-url>
+git clone https://github.com/mingxiuuuuu/Jira-MCP-Server.git
 cd mcp-jira-server
 
 # Install dependencies
