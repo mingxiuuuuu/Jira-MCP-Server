@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node test-mcp.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

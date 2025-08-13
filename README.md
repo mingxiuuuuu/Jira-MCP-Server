@@ -1,6 +1,48 @@
+
+
+## What is MCP?
+
+**Model Context Protocol (MCP)** is a standard that lets AI assistants (like GitHub Copilot) connect and interact with external tools and resources. It allows AI to discover, use, and manage actions or data.
+
+- The **host** is the AI platform (e.g., VS Code with Copilot) that user directly interacts.
+- The **client** is the AI assistant (e.g., Copilot Agent) that wants to use new tools and services.
+- The **server** is like the USB device,it provides the actual tools, actions, or data that the AI can use via MCP in a stardardized format.
+
+![MCP](images/MCP.png)
+
 # JIRA MCP Server
 
 A Model Context Protocol (MCP) server that enables **bi-directional communication** between AI assistants (like GitHub Copilot) and JIRA, allowing you to create, query, and manage JIRA tickets through natural language interactions.
+
+```
+┌─────────────────────┐    ┌─────────────────────┐    ┌───────────────────┐
+│  GitHub Copilot     │    │  Your MCP Server    │    │ JIRA REST API     │
+│  (THE CLIENT)       │◄──►│  (THE SERVER)       │◄──►│ (THE SERVICE)     │
+│   - The Brain       │    │   - The Translator  │    │  - The Database   │
+│   - Decides tools   │    │   - Tool executor   │    │  - Data provider  │ 
+│   - Fills schemas   │    │   - Format handler  │    │  - State manager  │
+└─────────────────────┘    └─────────────────────┘    └───────────────────┘
+
+```
+#### CLIENT (GitHub Copilot)
+- **The Brain** that interprets user natural language
+- **Decides which tools to use** based on user intent
+- **Fills in the input schemas** with extracted parameters
+- **Calls your server** with structured requests
+- **Presents responses** back to the user in readable format
+
+#### SERVER (Your MCP Server)
+- **Tool registry** - tells client what tools are available
+- **Parameter validator** - ensures inputs match schemas
+- **Business logic executor** - implements the actual operations
+- **Format translator** - converts between MCP format and JIRA API format
+- **Error handler** - manages failures gracefully
+
+#### SERVICE (JIRA REST API)
+- **Data storage** and persistence
+- **Business rules** enforcement (workflows, permissions)
+- **State management** (ticket statuses, transitions)
+- **Authentication** and authorization
 
 ## 🎯 What This Project Does
 
@@ -21,14 +63,6 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
 ## 🔄 How Bi-directional Communication Works
 
 ### The Architecture Flow
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   GitHub        │    │   MCP Server    │    │   JIRA API      │
-│   Copilot       │◄──►│   (Your Code)   │◄──►│   (Atlassian)   │
-│   (AI Agent)    │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
 
 ### Outbound: AI → JIRA (Commands & Actions)
 
@@ -82,85 +116,22 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
 7. **MCP Protocol** sends formatted data back to Copilot
 8. **Copilot** presents human-readable results to user
 
-### The "Bi-directional" Magic
-
-**Why it's truly bi-directional:**
-
-🔄 **Real-time Data Flow**: AI can both **send commands** to JIRA and **receive live data** from JIRA
-
-🔄 **Context Awareness**: When you ask follow-up questions, the AI can query current JIRA state
-
-🔄 **Dynamic Responses**: JIRA data changes are immediately available to the AI
-
-### Technical Implementation
-
-#### MCP Protocol Handling (Your `server.js`)
-
-```javascript
-// Tool Discovery - AI learns what JIRA operations are available
-this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      { name: 'create_jira_ticket', description: 'Create new tickets' },
-      { name: 'get_jira_tickets', description: 'Query existing tickets' },
-      // ... more tools
-    ]
-  };
-});
-
-// Tool Execution - AI calls your JIRA functions
-this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  switch (name) {
-    case 'create_jira_ticket':
-      return await this.createJiraTicket(args);  // AI → JIRA
-    case 'get_jira_tickets':
-      return await this.getJiraTickets(args);    // JIRA → AI
-  }
-});
-```
-
-#### JIRA API Integration
-
-```javascript
-// Outbound: AI request → JIRA action
-async createJiraTicket(args) {
-  const response = await jiraClient.post('/rest/api/3/issue', {
-    fields: {
-      summary: args.summary,
-      description: args.description
-    }
-  });
-  return { ticketKey: response.data.key };  // Back to AI
-}
-
-// Inbound: JIRA data → AI information
-async getJiraTickets(args) {
-  const response = await jiraClient.get('/rest/api/3/search', {
-    params: { jql: `assignee = "${args.assignee}"` }
-  });
-  return { tickets: response.data.issues };  // Back to AI
-}
-```
-
-### Communication Protocol Details
-
-#### Message Flow Example
-
-**User**: *"Create a bug ticket and then show me all my tickets"*
 
 ## 📁 Project Structure
 
 ```
 mcp-jira-server/
-├── server.js              # Main MCP server implementation
-├── package.json           # Node.js dependencies and scripts
-├── .env                   # JIRA credentials (create this file)
-├── .env.example           # Template for environment variables
-├── .gitignore            # Protects sensitive files from git
-├── .vscode/              # VS Code configuration
-│   └── mcp.json          # MCP server configuration for VS Code
+├── server.js            # Main MCP server implementation
+├── package.json         # Node.js dependencies and scripts
+├── .env                 # JIRA credentials (create this file)
+├── .env.example         # Template for environment variables
+├── .gitignore           # Protects sensitive files from git
+├── .git/                # Git repository data
+├── .vscode/             # VS Code configuration
+│   └── mcp.json         # MCP server configuration for VS Code
+├── images/              # Project images (for documentation)
+│   ├── JIra MCP.png     # JIRA MCP diagram
+│   └── MCP.png          # MCP analogy diagram
 └── README.md            # This file
 ```
 
@@ -183,7 +154,7 @@ Defines project metadata and dependencies:
 - **MCP SDK**: `@modelcontextprotocol/sdk` for MCP protocol implementation
 - **HTTP Client**: `axios` for JIRA API calls
 - **Environment Variables**: `dotenv` for secure credential management
-- **Scripts**: `npm start` to run the server, `npm test` to run tests
+- **Scripts**: `npm start` to run the server
 
 ### `.env` - Secure Configuration
 Contains sensitive JIRA credentials (⚠️ **never commit this file**):
@@ -202,6 +173,277 @@ Configures the MCP server for use with VS Code and GitHub Copilot:
 - Tells VS Code how to start the server
 - Enables Agent mode integration
 - Allows natural language interaction with JIRA
+
+## 🔬 Key Code Snippets of server.js
+
+### Core Dependencies and Configuration
+
+```javascript
+#!/usr/bin/env node
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import axios from 'axios';
+import { config } from 'dotenv';
+```
+
+- **MCP SDK imports** - Core protocol implementation
+- **Schema imports** - Request/response type definitions
+- **axios** - HTTP client for JIRA API calls
+- **dotenv** - Environment variable management for security
+
+### JIRA Client Configuration
+
+```javascript
+const JIRA_CONFIG = {
+  baseURL: process.env.JIRA_BASE_URL,
+  auth: {
+    username: process.env.JIRA_EMAIL,
+    password: process.env.JIRA_API_TOKEN  // Basic Auth with API token
+  },
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
+};
+
+const jiraClient = axios.create(JIRA_CONFIG);
+```
+- **Basic Authentication** - JIRA uses email + API token
+- **JSON headers** - expected input and output format (i.e., JSON)
+
+### MCP Server Class Architecture
+
+```javascript
+class JiraMCPServer {
+  constructor() {
+    this.server = new Server(
+      {
+        name: 'jira-mcp-server',
+        version: '0.1.0',
+      },
+      {
+        capabilities: {
+          tools: {},  // We provide tools capability
+        },
+      }
+    );
+
+    this.setupToolHandlers();
+    this.setupErrorHandling();
+  }
+}
+```
+- **Server metadata** - Identity for MCP protocol
+- **Capabilities declaration** - Tells clients what we support
+- **Separation of concerns** - Setup methods handle different aspects
+
+### Tool Registration: The Contract Definition
+
+The heart of MCP is the tool registration system. This is where you define **THE CONTRACT** between the AI client and your server:
+
+```javascript
+this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: 'create_jira_ticket',
+        description: 'Create a new JIRA ticket',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            summary: {
+              type: 'string',
+              description: 'Ticket title/summary',
+            },
+            description: {
+              type: 'string',
+              description: 'Ticket description',
+            },
+            issueType: {
+              type: 'string',
+              description: 'Issue type (Task, Bug, Story, Epic)',
+              default: 'Task',
+            },
+            priority: {
+              type: 'string',
+              description: 'Priority (Highest, High, Medium, Low, Lowest)',
+              default: 'Medium',
+            },
+          },
+          required: ['summary', 'description'],
+        },
+      },
+      // ... more tools
+    ],
+  };
+});
+```
+
+1. **Tool Discovery** - Client asks "what can you do?"
+2. **JSON Schema Definition** - Precise parameter specifications
+3. **Required vs Optional** - Client knows what MUST be provided
+4. **Type Safety** - Client validates before calling
+5. **Self-Documentation** - Descriptions guide AI understanding
+
+**The Client Uses This To:**
+- Understand available operations
+- Extract parameters from natural language
+- Validate inputs before making calls
+
+### Tool Execution
+
+```javascript
+this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  try {
+    switch (name) {
+      case 'create_jira_ticket':
+        return await this.createJiraTicket(args);
+      case 'get_jira_tickets':
+        return await this.getJiraTickets(args);
+      // ... other cases
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error executing ${name}: ${error.message}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+});
+```
+
+**Execution Flow:**
+1. **Client sends** structured request with tool name + arguments
+2. **Server validates** tool exists
+3. **Server executes** corresponding method
+4. **Error handling** catches any failures
+5. **Response formatting** standardizes output
+
+### HTTP Methods: Understanding GET, POST, PUT
+
+#### GET Requests - Data Retrieval
+```javascript
+// GET /rest/api/3/search - Query tickets
+const response = await jiraClient.get('/rest/api/3/search', {
+  params: {
+    jql: searchJql,
+    maxResults: maxResults,
+    fields: 'key,summary,status,assignee'
+  }
+});
+
+// GET /rest/api/3/issue/{ticketKey} - Get specific ticket
+const response = await jiraClient.get(`/rest/api/3/issue/${ticketKey}`, {
+  params: { fields, expand: includeHistory ? 'changelog' : '' }
+});
+```
+
+#### POST Requests - Creation & Actions
+```javascript
+// POST /rest/api/3/issue - Create new ticket
+const response = await jiraClient.post('/rest/api/3/issue', issueData);
+
+// POST /rest/api/3/issue/{key}/transitions - Change status
+await jiraClient.post(`/rest/api/3/issue/${ticketKey}/transitions`, {
+  transition: { id: transition.id }
+});
+```
+
+#### PUT Requests - Updates & Replacement
+```javascript
+// PUT /rest/api/3/issue/{key} - Update ticket fields
+await jiraClient.put(`/rest/api/3/issue/${ticketKey}`, updateData);
+```
+
+### Dual Strategy Implementation:
+```javascript
+let searchJql = jql;  // Accept direct JQL
+if (!searchJql) {
+  // Build JQL from simple filters for non-technical users
+  const conditions = [];
+  // ... build conditions
+  searchJql = conditions.join(' AND ');
+}
+```
+
+This approach serves both:
+- **Power users** who can write complex JQL directly
+- **Simple users** who get natural language → filter conversion
+
+
+### Data Flow Example: Creating a Ticket
+
+```
+User: "Create a bug ticket for login issues with high priority"
+
+1. CLIENT (Copilot) Analysis:
+   - Intent: create_jira_ticket
+   - Parameters extracted:
+     * summary: "Login issues"
+     * issueType: "Bug" 
+     * priority: "High"
+     * description: (inferred/asked for)
+
+2. CLIENT → SERVER Request:
+   {
+     "name": "create_jira_ticket",
+     "arguments": {
+       "summary": "Login issues",
+       "description": "User reported login authentication problems",
+       "issueType": "Bug",
+       "priority": "High"
+     }
+   }
+
+3. SERVER Processing:
+   - Validates against inputSchema
+   - Calls this.createJiraTicket(args)
+   - Transforms to JIRA API format
+   - Makes HTTP POST to JIRA
+
+4. SERVER → JIRA Request:
+   POST /rest/api/3/issue
+   {
+     "fields": {
+       "project": {"key": "DEV"},
+       "summary": "Login issues",
+       "description": { /* ADF format */ },
+       "issuetype": {"name": "Bug"},
+       "priority": {"name": "High"}
+     }
+   }
+
+5. JIRA → SERVER Response:
+   {
+     "id": "10001",
+     "key": "DEV-123",
+     "self": "https://company.atlassian.net/rest/api/3/issue/10001"
+   }
+
+6. SERVER → CLIENT Response:
+   {
+     "content": [{
+       "type": "text", 
+       "text": "✅ Successfully created JIRA ticket!\n🎫 Key: DEV-123..."
+     }]
+   }
+
+7. CLIENT → USER Display:
+   "I've created ticket DEV-123 for the login bug. You can view it at..."
+```
 
 ## 🚀 Setup Instructions
 
@@ -245,19 +487,7 @@ npm install
    - Look at any JIRA ticket URL: `https://company.atlassian.net/browse/PROJ-123` → Key is `PROJ`
    - Or check your project settings in JIRA
 
-### Step 3: Test the Server
-
-```bash
-# Test JIRA connection
-npm test
-
-# You should see:
-# ✅ Connected to MCP server
-# ✅ Tool discovery successful
-# ✅ JIRA integration working
-```
-
-### Step 4: Configure VS Code
+### Step 3: Configure VS Code
 
 #### Method A: Using VS Code Commands (Recommended)
 
@@ -271,6 +501,7 @@ npm test
    - **Working Directory:** `/absolute/path/to/your/mcp-jira-server`
 5. **Choose:** "Global" (available in all projects)
 6. **Restart VS Code**
+7. `Ctrl+Shift+P`, type **MCP: List Servers**, select "jira" server and click "Start"
 
 #### Method B: Manual Configuration
 
@@ -288,14 +519,14 @@ Create `.vscode/mcp.json` in your project root:
 }
 ```
 
-### Step 5: Enable Agent Mode
+### Step 4: Enable Agent Mode
 
 1. **Open VS Code Settings** (`Ctrl+,`)
 2. **Search for:** `chat.agent.enabled`
 3. **Check the box** ✅
 4. **Restart VS Code**
 
-### Step 6: Test Integration
+### Step 5: Test Integration
 
 1. **Open GitHub Copilot Chat** (click chat icon in sidebar)
 2. **Select "Agent" mode** from dropdown
@@ -321,31 +552,22 @@ Once set up, you can interact with JIRA through natural language in VS Code:
 
 ### Querying Tickets
 ```
-"Show me all open tickets assigned to John Smith"
-"List all high-priority bugs in the current sprint"
+"List all high-priority ticket in the current sprint"
 "What tickets are in 'In Progress' status?"
 ```
 
 ### Updating Tickets
 ```
-"Update ticket DEV-123 status to 'Done'"
-"Assign ticket PROJ-456 to alice@company.com"
-"Add a comment to DEV-789 saying 'Fixed in latest deployment'"
+"Update ticket SCRUM-29 status to 'Done'"
+"Add a comment to SCRUM-20 saying 'To be reviewed by project sponsor'"
 ```
 
 ### Getting Information
 ```
-"Get details for ticket DEV-123"
+"Get details for ticket SCRUM-16"
 "Show me all available JIRA projects"
-"What's the current status of ticket PROJ-456?"
+"What's the current status of ticket SCRUM-8?"
 ```
-
-## 🔒 Security Notes
-
-- **Never commit `.env`** - Contains sensitive API credentials
-- **API token has full account access** - Keep it secure
-- **Use project-specific tokens** when possible
-- **Regularly rotate API tokens** for security
 
 ## 🚨 Troubleshooting
 
@@ -366,10 +588,6 @@ Once set up, you can interact with JIRA through natural language in VS Code:
 - Check `MCP: List Servers` shows "Connected"
 - Restart VS Code after configuration changes
 
-**"Command not found"**
-- Use absolute paths in MCP configuration
-- Check working directory is correct
-- Verify `server.js` exists in specified location
 
 ### Getting Help
 
@@ -378,11 +596,5 @@ Once set up, you can interact with JIRA through natural language in VS Code:
 3. **Check VS Code console:** Help → Toggle Developer Tools
 4. **Test tools individually:** Use `#tool_name` in Agent mode
 
-
-## 🚀 Next Steps
-
-- **Add more JIRA operations** (bulk updates, advanced search)
-- **Integrate with Confluence** for documentation
-- **Add Azure DevOps support** for alternative project management
 
 
