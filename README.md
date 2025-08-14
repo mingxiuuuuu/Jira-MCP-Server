@@ -106,10 +106,9 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
 
 **User Input**: *"Create a JIRA ticket for fixing the login bug"*
 
-1. **GitHub Copilot** receives natural language request
-2. **Copilot's AI** determines this needs JIRA interaction
-3. **MCP Protocol** calls your server's `create_jira_ticket` tool
-4. **Your MCP Server** receives structured parameters:
+1. **GitHub Copilot (client)** receives natural language request
+2. **Client** decides to use `create_jira_ticket` tool and fills the input schema
+3. **Server** receives structured parameters from Client and calls the `create_jira_ticket` tool:
    ```json
    {
      "summary": "Fix login bug",
@@ -118,27 +117,27 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
      "priority": "High"
    }
    ```
-5. **Your Server** makes HTTP call to JIRA REST API
+5. **Server** makes HTTP call to JIRA REST API
 6. **JIRA** creates the ticket and returns ticket ID
-7. **Your Server** formats response for AI
-8. **Copilot** presents success message to user
+7. **Server** formats response for AI
+8. **Client** presents success message to user
 
 ### Inbound: JIRA → AI (Data & Information)
 
 **User Input**: *"Show me all tickets assigned to John"*
 
-1. **GitHub Copilot** recognizes this as a query request
-2. **MCP Protocol** calls your server's `get_jira_tickets` tool
-3. **Your MCP Server** receives query parameters:
+1. **Client** recognizes this as a query request
+2. **Server** calls `get_jira_tickets` tool
+3. **Server** receives query parameters:
    ```json
    {
      "assignee": "john@company.com",
      "maxResults": 20
    }
    ```
-4. **Your Server** queries JIRA REST API with JQL
+4. **Server** queries JIRA REST API with JQL
 5. **JIRA** returns ticket data (JSON)
-6. **Your Server** processes and formats the data:
+6. **Server** processes and formats the data:
    ```json
    {
      "tickets": [
@@ -151,9 +150,7 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
      ]
    }
    ```
-7. **MCP Protocol** sends formatted data back to Copilot
-8. **Copilot** presents human-readable results to user
-
+7. **Client** presents human-readable results to user
 
 
 ## 🔬 Key Code Snippets of server.js
@@ -315,58 +312,6 @@ this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 4. **Error handling** catches any failures
 5. **Response formatting** standardizes output
 
-### HTTP Methods: Understanding GET, POST, PUT
-
-#### GET Requests - Data Retrieval
-```javascript
-// GET /rest/api/3/search - Query tickets
-const response = await jiraClient.get('/rest/api/3/search', {
-  params: {
-    jql: searchJql,
-    maxResults: maxResults,
-    fields: 'key,summary,status,assignee'
-  }
-});
-
-// GET /rest/api/3/issue/{ticketKey} - Get specific ticket
-const response = await jiraClient.get(`/rest/api/3/issue/${ticketKey}`, {
-  params: { fields, expand: includeHistory ? 'changelog' : '' }
-});
-```
-
-#### POST Requests - Creation & Actions
-```javascript
-// POST /rest/api/3/issue - Create new ticket
-const response = await jiraClient.post('/rest/api/3/issue', issueData);
-
-// POST /rest/api/3/issue/{key}/transitions - Change status
-await jiraClient.post(`/rest/api/3/issue/${ticketKey}/transitions`, {
-  transition: { id: transition.id }
-});
-```
-
-#### PUT Requests - Updates & Replacement
-```javascript
-// PUT /rest/api/3/issue/{key} - Update ticket fields
-await jiraClient.put(`/rest/api/3/issue/${ticketKey}`, updateData);
-```
-
-### Dual Strategy Implementation:
-```javascript
-let searchJql = jql;  // Accept direct JQL
-if (!searchJql) {
-  // Build JQL from simple filters for non-technical users
-  const conditions = [];
-  // ... build conditions
-  searchJql = conditions.join(' AND ');
-}
-```
-
-This approach serves both:
-- **Power users** who can write complex JQL directly
-- **Simple users** who get natural language → filter conversion
-
-
 ### Data Flow Example: Creating a Ticket
 
 ```
@@ -427,6 +372,58 @@ User: "Create a bug ticket for login issues with high priority"
 7. CLIENT → USER Display:
    "I've created ticket DEV-123 for the login bug. You can view it at..."
 ```
+
+### HTTP Methods: Understanding GET, POST, PUT
+
+#### GET Requests - Data Retrieval
+```javascript
+// GET /rest/api/3/search - Query tickets
+const response = await jiraClient.get('/rest/api/3/search', {
+  params: {
+    jql: searchJql,
+    maxResults: maxResults,
+    fields: 'key,summary,status,assignee'
+  }
+});
+
+// GET /rest/api/3/issue/{ticketKey} - Get specific ticket
+const response = await jiraClient.get(`/rest/api/3/issue/${ticketKey}`, {
+  params: { fields, expand: includeHistory ? 'changelog' : '' }
+});
+```
+
+#### POST Requests - Creation & Actions
+```javascript
+// POST /rest/api/3/issue - Create new ticket
+const response = await jiraClient.post('/rest/api/3/issue', issueData);
+
+// POST /rest/api/3/issue/{key}/transitions - Change status
+await jiraClient.post(`/rest/api/3/issue/${ticketKey}/transitions`, {
+  transition: { id: transition.id }
+});
+```
+
+#### PUT Requests - Updates & Replacement
+```javascript
+// PUT /rest/api/3/issue/{key} - Update ticket fields
+await jiraClient.put(`/rest/api/3/issue/${ticketKey}`, updateData);
+```
+
+### Dual Strategy Implementation:
+```javascript
+let searchJql = jql;  // Accept direct JQL
+if (!searchJql) {
+  // Build JQL from simple filters for non-technical users
+  const conditions = [];
+  // ... build conditions
+  searchJql = conditions.join(' AND ');
+}
+```
+
+This approach serves both:
+- **Power users** who can write complex JQL directly
+- **Simple users** who get natural language → filter conversion
+
 
 ## 🚀 Setup Instructions
 
