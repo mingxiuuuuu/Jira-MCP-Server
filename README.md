@@ -104,16 +104,16 @@ This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
 
 ### Outbound: AI → JIRA (Commands & Actions)
 
-**User Input**: *"Create a JIRA ticket for fixing the login bug"*
+**User Input**: *"Create a JIRA ticket for creating a login feature on the UI"*
 
 1. **GitHub Copilot (client)** receives natural language request
 2. **Client** decides to use `create_jira_ticket` tool and fills the input schema
 3. **Server** receives structured parameters from Client and calls the `create_jira_ticket` tool:
    ```json
    {
-     "summary": "Fix login bug",
-     "description": "User reported login authentication issues",
-     "issueType": "Bug",
+     "summary": "Add login auth in UI",
+     "description": "Add login authentication using Supabase on the UI",
+     "issueType": "Task",
      "priority": "High"
    }
    ```
@@ -315,13 +315,13 @@ this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 ### Data Flow Example: Creating a Ticket
 
 ```
-User: "Create a bug ticket for login issues with high priority"
+User: "Create a new ticket for addition of authentication on the UI with high priority"
 
 1. CLIENT (Copilot) Analysis:
    - Intent: create_jira_ticket
    - Parameters extracted:
-     * summary: "Login issues"
-     * issueType: "Bug" 
+     * summary: "Login feature"
+     * issueType: "Task" 
      * priority: "High"
      * description: (inferred/asked for)
 
@@ -329,9 +329,9 @@ User: "Create a bug ticket for login issues with high priority"
    {
      "name": "create_jira_ticket",
      "arguments": {
-       "summary": "Login issues",
-       "description": "User reported login authentication problems",
-       "issueType": "Bug",
+       "summary": "Login feature",
+       "description": "Addition of authentication feature on UI",
+       "issueType": "Task",
        "priority": "High"
      }
    }
@@ -347,9 +347,9 @@ User: "Create a bug ticket for login issues with high priority"
    {
      "fields": {
        "project": {"key": "DEV"},
-       "summary": "Login issues",
+       "summary": "Login feature",
        "description": { /* ADF format */ },
-       "issuetype": {"name": "Bug"},
+       "issuetype": {"name": "Task"},
        "priority": {"name": "High"}
      }
    }
@@ -370,7 +370,7 @@ User: "Create a bug ticket for login issues with high priority"
    }
 
 7. CLIENT → USER Display:
-   "I've created ticket DEV-123 for the login bug. You can view it at..."
+   "I've created ticket DEV-123 for the login feature. You can view it at..."
 ```
 
 ### HTTP Methods: Understanding GET, POST, PUT
@@ -515,7 +515,7 @@ Create `.vscode/mcp.json` in your project root:
    What JIRA tools do you have available?
    ```
    ```
-   Create a JIRA ticket for fixing the login bug
+   Create a JIRA ticket for creating the login feature
    ```
    ```
    Show me all tickets assigned to me
@@ -542,7 +542,7 @@ Once set up, you can interact with JIRA through natural language in VS Code:
 
 ### Creating Tickets
 ```
-"Create a JIRA ticket called 'Fix login authentication bug' with high priority"
+"Create a JIRA ticket called 'Add authentication features to UI' with high priority"
 ```
 
 ### Querying Tickets
