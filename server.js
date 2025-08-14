@@ -9,8 +9,13 @@ import {
 import axios from 'axios';
 import { config } from 'dotenv';
 
-// Load environment variables
-config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load environment variables from the server.js directory
+config({ path: path.join(__dirname, '.env') });
 
 // JIRA Configuration
 const JIRA_CONFIG = {

@@ -1,122 +1,3 @@
-
-
-## What is MCP?
-
-**Model Context Protocol (MCP)** is a standard that lets AI assistants (like GitHub Copilot) connect and interact with external tools and resources. It allows AI to discover, use, and manage actions or data.
-
-- The **host** is the AI platform (e.g., VS Code with Copilot) that user directly interacts.
-- The **client** is the AI assistant (e.g., Copilot Agent) that wants to use new tools and services.
-- The **server** is like the USB device,it provides the actual tools, actions, or data that the AI can use via MCP in a stardardized format.
-
-![MCP](images/MCP.png)
-
-# JIRA MCP Server
-
-A Model Context Protocol (MCP) server that enables **bi-directional communication** between AI assistants (like GitHub Copilot) and JIRA, allowing you to create, query, and manage JIRA tickets through natural language interactions.
-
-```
-┌─────────────────────┐    ┌─────────────────────┐    ┌───────────────────┐
-│  GitHub Copilot     │    │  Your MCP Server    │    │ JIRA REST API     │
-│  (THE CLIENT)       │◄──►│  (THE SERVER)       │◄──►│ (THE SERVICE)     │
-│   - The Brain       │    │   - The Translator  │    │  - The Database   │
-│   - Decides tools   │    │   - Tool executor   │    │  - Data provider  │ 
-│   - Fills schemas   │    │   - Format handler  │    │  - State manager  │
-└─────────────────────┘    └─────────────────────┘    └───────────────────┘
-
-```
-#### CLIENT (GitHub Copilot)
-- **The Brain** that interprets user natural language
-- **Decides which tools to use** based on user intent
-- **Fills in the input schemas** with extracted parameters
-- **Calls your server** with structured requests
-- **Presents responses** back to the user in readable format
-
-#### SERVER (Your MCP Server)
-- **Tool registry** - tells client what tools are available
-- **Parameter validator** - ensures inputs match schemas
-- **Business logic executor** - implements the actual operations
-- **Format translator** - converts between MCP format and JIRA API format
-- **Error handler** - manages failures gracefully
-
-#### SERVICE (JIRA REST API)
-- **Data storage** and persistence
-- **Business rules** enforcement (workflows, permissions)
-- **State management** (ticket statuses, transitions)
-- **Authentication** and authorization
-
-## 🎯 What This Project Does
-
-This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
-
-- ✅ **Create JIRA tickets** through AI chat
-- ✅ **Query and search tickets** with natural language
-- ✅ **Update ticket status** and properties
-- ✅ **Add comments** to existing tickets
-- ✅ **Get detailed ticket information**
-- ✅ **List projects** and browse JIRA data
-
-**Example interactions:**
-- *"Create a JIRA ticket for fixing the login bug"*
-- *"Show me all high-priority tickets assigned to John"*
-- *"Update ticket DEV-123 status to In Progress"*
-
-## 🔄 How Bi-directional Communication Works
-
-### The Architecture Flow
-
-### Outbound: AI → JIRA (Commands & Actions)
-
-**User Input**: *"Create a JIRA ticket for fixing the login bug"*
-
-1. **GitHub Copilot** receives natural language request
-2. **Copilot's AI** determines this needs JIRA interaction
-3. **MCP Protocol** calls your server's `create_jira_ticket` tool
-4. **Your MCP Server** receives structured parameters:
-   ```json
-   {
-     "summary": "Fix login bug",
-     "description": "User reported login authentication issues",
-     "issueType": "Bug",
-     "priority": "High"
-   }
-   ```
-5. **Your Server** makes HTTP call to JIRA REST API
-6. **JIRA** creates the ticket and returns ticket ID
-7. **Your Server** formats response for AI
-8. **Copilot** presents success message to user
-
-### Inbound: JIRA → AI (Data & Information)
-
-**User Input**: *"Show me all tickets assigned to John"*
-
-1. **GitHub Copilot** recognizes this as a query request
-2. **MCP Protocol** calls your server's `get_jira_tickets` tool
-3. **Your MCP Server** receives query parameters:
-   ```json
-   {
-     "assignee": "john@company.com",
-     "maxResults": 20
-   }
-   ```
-4. **Your Server** queries JIRA REST API with JQL
-5. **JIRA** returns ticket data (JSON)
-6. **Your Server** processes and formats the data:
-   ```json
-   {
-     "tickets": [
-       {
-         "key": "DEV-123",
-         "summary": "Fix authentication bug",
-         "status": "In Progress",
-         "assignee": "John Smith"
-       }
-     ]
-   }
-   ```
-7. **MCP Protocol** sends formatted data back to Copilot
-8. **Copilot** presents human-readable results to user
-
-
 ## 📁 Project Structure
 
 ```
@@ -174,6 +55,107 @@ Configures the MCP server for use with VS Code and GitHub Copilot:
 - Enables Agent mode integration
 - Allows natural language interaction with JIRA
 
+## What is MCP?
+
+**Model Context Protocol (MCP)** is a standard that lets AI assistants (like GitHub Copilot) connect and interact with external tools and resources. It allows AI to discover, use, and manage actions or data.
+
+![MCP](images/MCP.png)
+
+## JIRA MCP Server
+
+A Model Context Protocol (MCP) server that enables **bi-directional communication** between AI assistants (like GitHub Copilot) and JIRA, allowing you to create, query, and manage JIRA tickets through natural language interactions.
+
+```
+┌─────────────────────┐    ┌─────────────────────┐    ┌───────────────────┐
+│  GitHub Copilot     │    │  Your MCP Server    │    │ JIRA REST API     │
+│  (THE CLIENT)       │◄──►│  (THE SERVER)       │◄──►│ (THE SERVICE)     │
+│   - The Brain       │    │   - The Translator  │    │  - GET            │
+│   - Decides tools   │    │   - Tool executor   │    │  - POST           │ 
+│   - Fills schemas   │    │   - Format handler  │    │  - PUT            │
+└─────────────────────┘    └─────────────────────┘    └───────────────────┘
+
+```
+#### CLIENT (GitHub Copilot)
+- **The Brain** that interprets user natural language
+- **Decides which tools to use** based on user intent
+- **Fills in the input schemas** with extracted parameters
+- **Calls your server** with structured requests
+- **Presents responses** back to the user in readable format
+
+#### SERVER (Your MCP Server)
+- **Tool registry** - tells client what tools are available
+- **Parameter validator** - ensures inputs match schemas
+- **tool executor** - implements the actual operations
+- **Format translator** - converts between MCP format and JIRA API format
+
+## 🎯 What This Project Does
+
+This MCP server acts as a **bridge** between AI assistants and JIRA, enabling:
+
+- ✅ **Create JIRA tickets** through AI chat
+- ✅ **Query and search tickets** with natural language
+- ✅ **Update ticket status** and properties
+- ✅ **Add comments** to existing tickets
+- ✅ **Get detailed ticket information**
+- ✅ **List projects** and browse JIRA data
+
+
+## 🔄 How Bi-directional Communication Works
+
+### Outbound: AI → JIRA (Commands & Actions)
+
+**User Input**: *"Create a JIRA ticket for fixing the login bug"*
+
+1. **GitHub Copilot** receives natural language request
+2. **Copilot's AI** determines this needs JIRA interaction
+3. **MCP Protocol** calls your server's `create_jira_ticket` tool
+4. **Your MCP Server** receives structured parameters:
+   ```json
+   {
+     "summary": "Fix login bug",
+     "description": "User reported login authentication issues",
+     "issueType": "Bug",
+     "priority": "High"
+   }
+   ```
+5. **Your Server** makes HTTP call to JIRA REST API
+6. **JIRA** creates the ticket and returns ticket ID
+7. **Your Server** formats response for AI
+8. **Copilot** presents success message to user
+
+### Inbound: JIRA → AI (Data & Information)
+
+**User Input**: *"Show me all tickets assigned to John"*
+
+1. **GitHub Copilot** recognizes this as a query request
+2. **MCP Protocol** calls your server's `get_jira_tickets` tool
+3. **Your MCP Server** receives query parameters:
+   ```json
+   {
+     "assignee": "john@company.com",
+     "maxResults": 20
+   }
+   ```
+4. **Your Server** queries JIRA REST API with JQL
+5. **JIRA** returns ticket data (JSON)
+6. **Your Server** processes and formats the data:
+   ```json
+   {
+     "tickets": [
+       {
+         "key": "DEV-123",
+         "summary": "Fix authentication bug",
+         "status": "In Progress",
+         "assignee": "John Smith"
+       }
+     ]
+   }
+   ```
+7. **MCP Protocol** sends formatted data back to Copilot
+8. **Copilot** presents human-readable results to user
+
+
+
 ## 🔬 Key Code Snippets of server.js
 
 ### Core Dependencies and Configuration
@@ -192,7 +174,7 @@ import { config } from 'dotenv';
 ```
 
 - **MCP SDK imports** - Core protocol implementation
-- **Schema imports** - Request/response type definitions
+- **Schema imports** - CallToolRequestSchema and ListToolsRequestSchema
 - **axios** - HTTP client for JIRA API calls
 - **dotenv** - Environment variable management for security
 
@@ -215,6 +197,7 @@ const jiraClient = axios.create(JIRA_CONFIG);
 ```
 - **Basic Authentication** - JIRA uses email + API token
 - **JSON headers** - expected input and output format (i.e., JSON)
+- **JiraClient** - Jira API connection client (POST, GET, PUT)
 
 ### MCP Server Class Architecture
 
@@ -540,6 +523,21 @@ Create `.vscode/mcp.json` in your project root:
    ```
    Show me all tickets assigned to me
    ```
+### Optional: How to add Jira MCP server to your repository for seamless ticket management and development? 
+ 
+Add the mcp.json file to your repository and change to the absolute path where the server.js file of the jira mcp server lies and add server like before. You are then set to access Jira on the go without having to leave your development environment!
+
+ ```
+{
+  "servers": {
+    "jira": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["<change this to the absolute path to server.js of the jira mcp server>"]
+    }
+  }
+}
+ ```
 
 ## 🎯 Usage Examples
 
